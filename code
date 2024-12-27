@@ -1,0 +1,79 @@
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('File Management Portal');
+}
+
+function authenticateUser(username, password) {
+  const users = {
+    "hr@calanjiyam.com": "hr@123",
+    "admin@calanjiyam.com": "admin@123"
+  };
+
+  if (users[username] && users[username] === password) {
+    return { status: "success", role: username.includes('hr') ? "HR" : "Admin" };
+  }
+  return { status: "failure", message: "Authentication failed. Please check your username and password." };
+}
+
+function createNewFolderAndReturnId(folderName) {
+  try {
+    if (!folderName || folderName.trim() === "") {
+      throw new Error("Folder name cannot be empty.");
+    }
+    const newFolder = DriveApp.createFolder(folderName.trim());
+    return newFolder.getId();
+  } catch (error) {
+    return `Error: ${error.message}`;
+  }
+}
+
+function checkKeywords(fileName, keywords) {
+  if (!keywords || keywords.length === 0) return true;
+  for (const keyword of keywords) {
+    if (fileName.toLowerCase().includes(keyword.toLowerCase())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function moveFilesWithDynamicFolder(sourceFolderId, destinationFolderId, createNewFolder, fileType, keywords, folderName) {
+  try {
+    if (!sourceFolderId) {
+      throw new Error("Source folder ID is not provided.");
+    }
+    const sourceFolder = DriveApp.getFolderById(sourceFolderId);
+
+    if (createNewFolder) {
+      if (!folderName || folderName.trim() === "") {
+        throw new Error("New folder name is required when creating a new folder.");
+      }
+      destinationFolderId = createNewFolderAndReturnId(folderName);
+    }
+
+    if (!destinationFolderId) {
+      throw new Error("Destination folder ID is not provided.");
+    }
+    const destinationFolder = DriveApp.getFolderById(destinationFolderId);
+
+    const files = sourceFolder.getFiles();
+    let movedFiles = 0;
+
+    while (files.hasNext()) {
+      const file = files.next();
+      const fileName = file.getName();
+      if (fileType === "All" || fileName.toLowerCase().includes(fileType.toLowerCase())) {
+        if (checkKeywords(fileName, keywords)) {
+          file.moveTo(destinationFolder);
+          movedFiles++;
+        }
+      }
+    }
+
+    return movedFiles > 0
+      ? `Successfully moved ${movedFiles} file(s)!`
+      : "No matching files found to move.";
+  } catch (error) {
+    return `Error: ${error.message}`;
+  }
+}
