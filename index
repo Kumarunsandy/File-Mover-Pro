@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>File Management Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;700&family=Nunito:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    h1 {
+      font-family: 'Josefin Sans', sans-serif;
+      color: #0352BD;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input[type="text"], input[type="password"], select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #0352BD;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #0635FF;
+    }
+
+    .info {
+      font-size: 14px;
+      color: #747474;
+    }
+
+    .required {
+      color: #C65008;
+    }
+
+    .success {
+      color: #0ACB8B;
+    }
+
+    .error {
+      color: #C65008;
+    }
+
+    .tooltip {
+      cursor: pointer;
+      color: #0635FF;
+      text-decoration: underline;
+    }
+
+    .tooltip-text {
+      display: none;
+      background-color: #fff;
+      color: #0352BD;
+      border: 1px solid #0352BD;
+      padding: 10px;
+      position: absolute;
+      z-index: 1;
+      width: 200px;
+      border-radius: 4px;
+    }
+
+    .tooltip:hover .tooltip-text {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>File Management Portal</h1>
+    <div id="login-section">
+      <label for="username">Username <span class="required">*</span></label>
+      <input type="text" id="username" placeholder="Enter your username">
+      <label for="password">Password <span class="required">*</span></label>
+      <input type="password" id="password" placeholder="Enter your password">
+      <button onclick="authenticate()">Login</button>
+      <p id="login-message" class="info"></p>
+    </div>
+    <div id="file-management-section" style="display: none;">
+      <label for="sourceFolderId">Source Folder ID <span class="required">*</span></label>
+      <input type="text" id="sourceFolderId" placeholder="Enter Source Folder ID">
+      <label for="destinationFolderId">Destination Folder ID</label>
+      <input type="text" id="destinationFolderId" placeholder="Enter Destination Folder ID">
+      <label for="createNewFolder">
+        <input type="checkbox" id="createNewFolder" onclick="toggleFolderName()"> Create a new folder
+      </label>
+      <div id="new-folder-name-section" style="display: none;">
+        <label for="newFolderName">New Folder Name <span class="required">*</span></label>
+        <input type="text" id="newFolderName" placeholder="Enter New Folder Name">
+      </div>
+      <label for="fileType">File Type</label>
+      <select id="fileType">
+        <option value="All">All</option>
+        <option value="pdf">PDF</option>
+        <option value="doc">DOC</option>
+        <option value="jpg">JPG</option>
+        <option value="png">PNG</option>
+      </select>
+      <label for="keywords">Keywords</label>
+      <input type="text" id="keywords" placeholder="Enter keywords, separated by commas">
+      <button onclick="moveFiles()">Move Files</button>
+      <p id="message" class="info"></p>
+    </div>
+  </div>
+  <script>
+    function authenticate() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      google.script.run.withSuccessHandler((response) => {
+        const messageElem = document.getElementById('login-message');
+        if (response.status === 'success') {
+          messageElem.textContent = 'Login successful!';
+          messageElem.className = 'success';
+          document.getElementById('login-section').style.display = 'none';
+          document.getElementById('file-management-section').style.display = 'block';
+        } else {
+          messageElem.textContent = response.message;
+          messageElem.className = 'error';
+        }
+      }).authenticateUser(username, password);
+    }
+
+    function toggleFolderName() {
+      const section = document.getElementById('new-folder-name-section');
+      section.style.display = document.getElementById('createNewFolder').checked ? 'block' : 'none';
+    }
+
+    function moveFiles() {
+      const sourceFolderId = document.getElementById('sourceFolderId').value;
+      const destinationFolderId = document.getElementById('destinationFolderId').value;
+      const createNewFolder = document.getElementById('createNewFolder').checked;
+      const folderName = createNewFolder ? document.getElementById('newFolderName').value : null;
+      const fileType = document.getElementById('fileType').value;
+      const keywords = document.getElementById('keywords').value.split(',').map(kw => kw.trim());
+
+      google.script.run.withSuccessHandler((message) => {
+        document.getElementById('message').textContent = message;
+      }).moveFilesWithDynamicFolder(sourceFolderId, destinationFolderId, createNewFolder, fileType, keywords, folderName);
+    }
+  </script>
+</body>
+</html>
